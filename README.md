@@ -7,7 +7,7 @@ from glob import glob
 from trafficlightdetector import TrafficLightDetector
 ```
 
-## Define ```color_bounds```
+## Define color bounds
 ```python
 red_bound = ([0,0,0], [255,255,360])
 green_bound = ([0,0,0], [255,255,360])
@@ -15,7 +15,7 @@ color_bounds = {'red':red_bound, 'green':green_bound}
 ```
 *NOTE: replace above HSV color values*
 
-## Load ```reference_images```
+## Load reference images
 ```python
 reference_images = []
 reference_paths = glob('./reference/*.jpg')
