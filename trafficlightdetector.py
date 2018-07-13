@@ -2,26 +2,46 @@ import cv2
 import numpy as np
 
 class TrafficLightDetector:
-    def __init__(self, reference_images, color_bounds, color_threshold=50, feature_threshold=10):
+    def __init__(self, reference_images, color_bounds, color_threshold=50, feature_threshold=10, display=False):
         self.reference_images = reference_images
         self.feature_threshold = feature_threshold
         self.color_threshold = color_threshold
         self.color_bounds = color_bounds
+        self.display = display
 
     def get_state(self, query):
+        view = query.copy()
+
         for reference in self.reference_images:
-            traffic_light = self.feature_matching(query, reference)
+            traffic_light, tl, br = self.feature_matching(query, reference)
             if traffic_light is not None:
                 break
 
         if traffic_light is None:
+            if self.display:
+                cv2.imshow('TrafficLightDetector', view)
             return None
 
         state = self.get_color(traffic_light)
-        return state
+
+        if self.display:
+            s = state[0]
+            if s != None:
+                color = (0, 0, 0)
+                if s == 'red':
+                    color = (0, 0, 255)
+                elif s == 'green':
+                    color = (0, 255, 0)
+                cv2.rectangle(view, tl, br, color, 3)
+
+            cv2.imshow('TrafficLightDetector', view)
+
+        return state[0]
 
     def get_color(self, traffic_light):
         hsv = cv2.cvtColor(traffic_light, cv2.COLOR_BGR2HSV)
+
+        color_scores = []
 
         for color in self.color_bounds:
             bound = self.color_bounds[color]
@@ -38,10 +58,14 @@ class TrafficLightDetector:
 
             percent = (num_white/num_pix)*100
 
-            if percent > self.color_threshold:
-                return color
+            if percent >= self.color_threshold:
+                color_scores.append((color, percent))
 
-        return None
+        if len(color_scores) == 0:
+            return None
+
+        color_scores = sorted(color_scores, key=lambda x:x[1], reverse=True)
+        return color_scores[0]
 
     def feature_matching(self, query, reference):
         def get_ROI(img, points):
@@ -59,7 +83,7 @@ class TrafficLightDetector:
             br = (max(x_list),max(y_list))
 
             roi = img[tl[1]:br[1], tl[0]:br[0]]
-            return roi
+            return roi, tl, br
 
         def match_features(reference, query, min_match_count = 10):
             """
@@ -114,10 +138,11 @@ class TrafficLightDetector:
 
         dst_points = match_features(query, reference, self.feature_threshold)
 
-        if dst_points is not None:
-            return get_ROI(query, dst_points)
+        if dst_points != []:
+            roi, tl, br = get_ROI(query, dst_points)
+            return roi, tl, br
 
-        return None
+        return None, None, None
 
 def main():
     pass
